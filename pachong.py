@@ -1,8 +1,7 @@
-import json
+import json,sys,requests,MySQLdb,urllib
 from multiprocessing.dummy import Pool as ThreadPool
-
-import requests
 from bs4 import BeautifulSoup
+
 
 
 class Pachong:
@@ -15,6 +14,9 @@ class Pachong:
         tryLogin = self.s.post('http://www.zimuzu.tv/User/Login/ajaxLogin', data=info)
         rtn = json.loads(tryLogin.text)
         self.status = rtn['status']
+
+        self.db = MySQLdb.connect('localhost', 'root', '', 'test', use_unicode=True, charset="utf8")
+        self.cursor = self.db.cursor()
 
     def login(self, name, password):
         if self.status == 1:
@@ -50,11 +52,13 @@ class Pachong:
         searchs = []
         for id in itemid:
             url = 'http://www.zimuzu.tv/resource/list/{}'.format(id)
-            searchs.append({'url': url, 'season': season, 'vFormat': vFormat})
+            searchs.append({'url': url, 'seriesid': id, 'season': season, 'vFormat': vFormat})
 
         print(searchs)
         pool = ThreadPool(4)
         result = pool.map(self.papapa, searchs)
+        self.db.commit()
+        self.db.close()
         print(result)
 
     def papapa(self, search):
@@ -68,8 +72,16 @@ class Pachong:
         # print(lis)
         links = {}
         for li in lis:
+            seriesid = search['seriesid']
+            season = li['season']
+            episode = li['episode']
+            itemid = li.find('a', attrs={"itemid": True})['itemid']
             title = li.find('a', attrs={"itemid": True})['title']
             href = li.find('a', attrs={"type": "ed2k"})['href']
             links[title] = href
-            # print("{0}\n{1}".format(title, href))
+            # print("insert into zimuzu(item_id,series_id,episode,season,ed2k) VALUES({0},{1},{2},{3},'{4}')".format(itemid, seriesid, episode, season, urllib.parse.quote(href)))
+            self.cursor.execute("insert into zimuzu(item_id,series_id,episode,season,ed2k) VALUES({0},{1},{2},{3},'{4}')".format(itemid, seriesid, episode, season, href))
+
         return links
+
+    # def store(self, resu):
