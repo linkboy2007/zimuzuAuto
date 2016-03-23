@@ -6,5 +6,5 @@ if(fuck.status == 0):
     print(fuck.login(name='小灰机灰上天', password='WZRJJ888'))
 
 
-itemid = fuck.search(keyword='权力的游戏')
-print(fuck.get_links(itemid, season=5))
+itemid = fuck.search(keywords=['权力的游戏','无耻家庭'])
+print(fuck.get_links(itemid, season=4))
